@@ -1,0 +1,111 @@
+# Development environment override
+services:
+  
+  wss.localhost:
+    ports:
+      - "8081:8081"
+      - "8080:8080"
+    build: 
+      context: .
+      target: websocket_server
+    container_name: wss.localhost
+
+    environment:
+      STABILITY: dev
+      SERVER_NAME: wss.localhost
+    depends_on: 
+      - database 
+    networks:
+      - backend
+      #  - caddy
+    # Override CMD to start the websocket server with SSL by providing a secure URL
+    #command: ["php", "/app/bin/console", "app:start-server", "-u", "wss://localhost:8080"]
+    #command: ["php", "/app/bin/console", "app:start-server"]
+      #    labels:
+#      caddy: wss.localhost
+#      caddy.reverse_proxy: "{{upstreams 8081}}"
+#      caddy.reverse_proxy.header_down_1: +Access-Control-Allow-Origin "https://localhost"
+      
+  php:
+    container_name: app.localhost
+    networks:
+      - backend
+    #  - caddy
+    build:
+      context: .
+      target: frankenphp_dev
+    volumes:
+      - ./:/app
+      - ./frankenphp/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./frankenphp/conf.d/app.dev.ini:/usr/local/etc/php/conf.d/app.dev.ini:ro
+      # If you develop on Mac or Windows you can remove the vendor/ directory
+      #  from the bind-mount for better performance by enabling the next line:
+      #- /app/vendor
+    environment:
+      MERCURE_EXTRA_DIRECTIVES: demo
+      # See https://xdebug.org/docs/all_settings#mode
+      XDEBUG_MODE: "${XDEBUG_MODE:-off}"
+      SYMFONY_VERSION: 6.*
+      DATABASE_URL: mysql://${MARIADB_USER:-app}:${MARIADB_PASSWORD:-!ChangeMe!}@database:3306/${MARIADB_DB:-app}?serverVersion=${MARIADB_VERSION:-mariadb-10.6.0}&charset=${POSTGRES_CHARSET:-utf8}
+    extra_hosts:
+      # Ensure that host.docker.internal is correctly defined on Linux
+      - host.docker.internal:host-gateway
+    tty: true
+    ports:
+      # HTTP
+      - target: 80
+        published: ${HTTP_PORT:-80}
+        protocol: tcp
+      # HTTPS
+      - target: 443
+        published: ${HTTPS_PORT:-443}
+        protocol: tcp
+      # HTTP/3
+      - target: 443
+        published: ${HTTP3_PORT:-443}
+        protocol: udp
+    depends_on:
+      - database
+
+        
+        
+  
+  ###> symfony/mercure-bundle ###
+###< symfony/mercure-bundle ###
+
+###> doctrine/doctrine-bundle ###
+  database:
+    ports:
+      - "5432"
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-!ChangeMe!}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-!ChangeMe!}
+###< doctrine/doctrine-bundle ###
+
+  # Caddy Docker Proxy - reverse proxy with automatic HTTPS
+#  proxy:
+#    image: lucaslorentz/caddy-docker-proxy:ci-alpine
+#    container_name: ws.proxy
+#    ports:
+#      - 80:80
+#      - 443:443
+#      - 8081:8081
+#    environment:
+#      - CADDY_INGRESS_NETWORKS=caddy
+#    networks:
+#      - caddy
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
+#      - caddy_proxy_data:/data
+#      - caddy_proxy_config:/config
+#    restart: unless-stopped
+#
+networks:
+    backend:
+        driver: bridge
+#    caddy:
+#      external: true
+#    
+#volumes: 
+#  caddy_proxy_data:
+#  caddy_proxy_config:

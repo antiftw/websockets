@@ -1,0 +1,38 @@
+
+const connection = connect();
+console.log(connection)
+const messages = [];
+function connect() {
+    let conn = new WebSocket('{{ websocketUrl|raw }}');
+
+
+    conn.onopen = function(e) {
+        console.log("Connection established!");
+    };
+
+    conn.onmessage = function(e) {
+        messages.push(e.data);
+        updateMessages();
+    };
+
+    conn.onclose = function(e) {
+        console.log("Connection closed!");
+    };
+    return conn;
+}
+function send() {
+    let from = document.getElementById('websocket_message_from').value;
+    let message = document.getElementById('websocket_message_content').value;
+    message = `${from}: ${message}`
+    messages.push(message);
+    connection.send(message);
+    updateMessages();
+}
+
+function updateMessages() {
+    const messagesElement = document.getElementById('messages');
+    messagesElement.innerHTML = '';
+    messages.forEach(function(message) {
+        messagesElement.innerHTML += message + '<br>';
+    });
+}

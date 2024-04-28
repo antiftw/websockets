@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+<div class="container">
+    <div class="form">
+        {{ form_start(form) }}
+        {{ form_widget(form) }}
+        {{ form_end(form) }}
+
+    </div>
+</div>
+<button onclick="connect()">connect</button>
+<button onclick="send()">send</button>
+<div id="messages"></div>
+</body>
+
+</html>
+
+<script>
+    {{ include('websockets.js.twig') }}
+</script>
